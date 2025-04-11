@@ -1,0 +1,1466 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Body Type Calculator | Discover Your Unique Shape</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Montserrat:wght@700;800&family=Playfair+Display:wght@700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/posenet"></script>
+  <style>
+    :root {
+      --primary: #d53a51;
+      --primary-dark: #c22d44;
+      --primary-light: #ee9ca7;
+      --secondary: #a18cd1;
+      --accent: #fbc2eb;
+      --dark: #292F36;
+      --light: #f9f9f9;
+      --white: #FFFFFF;
+      --text: #333;
+      --text-light: #666;
+      --gradient: linear-gradient(135deg, var(--primary), var(--secondary));
+      --gradient-dark: linear-gradient(135deg, var(--primary-dark), #8e6fd1);
+      --shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+      --shadow-hover: 0 15px 35px rgba(0, 0, 0, 0.15);
+      --transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    
+    body {
+      font-family: 'Poppins', sans-serif;
+      margin: 0;
+      padding: 0;
+      background: var(--light);
+      color: var(--text);
+      min-height: 100vh;
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    /* Floating background elements */
+    .bg-circle {
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(60px);
+      opacity: 0.15;
+      z-index: -1;
+    }
+    
+    .circle-1 {
+      width: 300px;
+      height: 300px;
+      background: var(--primary);
+      top: -100px;
+      left: -100px;
+      animation: float 15s infinite alternate;
+    }
+    
+    .circle-2 {
+      width: 400px;
+      height: 400px;
+      background: var(--secondary);
+      bottom: -150px;
+      right: -100px;
+      animation: float 18s infinite alternate-reverse;
+    }
+    
+    .circle-3 {
+      width: 200px;
+      height: 200px;
+      background: var(--accent);
+      top: 50%;
+      left: 30%;
+      animation: float 12s infinite alternate;
+    }
+    
+    @keyframes float {
+      0% { transform: translate(0, 0) rotate(0deg); }
+      50% { transform: translate(20px, 30px) rotate(5deg); }
+      100% { transform: translate(-10px, -20px) rotate(-5deg); }
+    }
+
+    /* Main container */
+    .container {
+      max-width: 1200px;
+      margin: 40px auto;
+      background: rgba(255, 255, 255, 0.9);
+      backdrop-filter: blur(10px);
+      padding: 40px;
+      border-radius: 25px;
+      box-shadow: var(--shadow);
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 40px;
+      position: relative;
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+    }
+
+    .container::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 8px;
+      background: var(--gradient);
+    }
+
+    /* Header styles */
+    .header {
+      grid-column: 1 / -1;
+      text-align: center;
+      margin-bottom: 30px;
+      position: relative;
+    }
+    
+    h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: 3rem;
+      color: var(--dark);
+      margin-bottom: 15px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      position: relative;
+      display: inline-block;
+    }
+    
+    h1::after {
+      content: '';
+      position: absolute;
+      bottom: -10px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 120px;
+      height: 4px;
+      background: var(--gradient);
+      border-radius: 2px;
+    }
+    
+    .subtitle {
+      font-size: 1.1rem;
+      color: var(--text-light);
+      max-width: 600px;
+      margin: 0 auto;
+      line-height: 1.7;
+    }
+
+    /* Tabs navigation */
+    .tabs {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 30px;
+      grid-column: 1 / -1;
+      background: rgba(255, 255, 255, 0.8);
+      padding: 10px;
+      border-radius: 50px;
+      flex-wrap: wrap;
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+      position: relative;
+      z-index: 1;
+      border: 1px solid rgba(0, 0, 0, 0.05);
+    }
+    
+    .tab-button {
+      padding: 14px 30px;
+      background: transparent;
+      color: var(--text-light);
+      border: none;
+      border-radius: 50px;
+      cursor: pointer;
+      margin: 5px;
+      transition: var(--transition);
+      font-weight: 600;
+      font-size: 1rem;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .tab-button i {
+      font-size: 1.1rem;
+    }
+    
+    .tab-button:hover {
+      color: var(--primary);
+      transform: translateY(-2px);
+    }
+    
+    .tab-button.active {
+      background: var(--gradient);
+      color: white;
+      box-shadow: 0 5px 20px rgba(255, 107, 107, 0.3);
+    }
+    
+    .tab-button.active:hover {
+      transform: translateY(-2px) scale(1.02);
+      box-shadow: 0 8px 25px rgba(255, 107, 107, 0.4);
+    }
+
+    /* Tab content */
+    .tab-content {
+      display: none;
+      animation: fadeIn 0.6s ease;
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(15px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .tab-content.active {
+      display: block;
+    }
+
+    /* Form styles */
+    .form-group {
+      margin-bottom: 30px;
+      position: relative;
+    }
+    
+    label {
+      display: block;
+      margin-bottom: 12px;
+      font-weight: 500;
+      color: var(--text);
+      font-size: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    label i {
+      color: var(--primary);
+      font-size: 1.1rem;
+    }
+    
+    .range-container {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      margin-top: 15px;
+    }
+    
+    input[type="range"] {
+      flex: 1;
+      height: 10px;
+      -webkit-appearance: none;
+      background: #e0e0e0;
+      border-radius: 10px;
+      outline: none;
+      transition: var(--transition);
+    }
+    
+    input[type="range"]:hover {
+      background: #d0d0d0;
+    }
+    
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 24px;
+      height: 24px;
+      background: var(--gradient);
+      border-radius: 50%;
+      cursor: pointer;
+      transition: var(--transition);
+      box-shadow: 0 3px 8px rgba(0,0,0,0.2);
+      border: 3px solid white;
+    }
+    
+    input[type="range"]::-webkit-slider-thumb:hover {
+      transform: scale(1.2);
+      box-shadow: 0 0 15px rgba(255, 107, 107, 0.7);
+    }
+    
+    output {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 60px;
+      height: 36px;
+      text-align: center;
+      background: var(--gradient);
+      color: white;
+      padding: 0 15px;
+      border-radius: 18px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      box-shadow: 0 3px 8px rgba(0,0,0,0.1);
+    }
+
+    /* File upload styles */
+    .file-upload {
+      position: relative;
+      margin-bottom: 30px;
+      transition: var(--transition);
+    }
+    
+    .file-upload:hover {
+      transform: translateY(-5px);
+    }
+    
+    .file-upload input {
+      position: absolute;
+      left: 0;
+      top: 0;
+      opacity: 0;
+      width: 100%;
+      height: 100%;
+      cursor: pointer;
+    }
+    
+    .file-upload-label {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 30px;
+      background: rgba(255, 255, 255, 0.8);
+      border: 2px dashed var(--primary-light);
+      border-radius: 20px;
+      color: var(--primary);
+      font-weight: 600;
+      transition: var(--transition);
+      cursor: pointer;
+      text-align: center;
+      min-height: 200px;
+    }
+    
+    .file-upload-label:hover {
+      background: rgba(255, 255, 255, 0.9);
+      border-color: var(--primary);
+      box-shadow: var(--shadow-hover);
+    }
+    
+    .file-upload-label i {
+      font-size: 3rem;
+      margin-bottom: 15px;
+      color: var(--primary);
+    }
+    
+    #uploadedImage {
+      width: 100%;
+      max-height: 400px;
+      object-fit: contain;
+      border-radius: 20px;
+      margin: 20px 0;
+      display: none;
+      box-shadow: var(--shadow);
+      border: 1px solid rgba(0,0,0,0.05);
+      transition: var(--transition);
+    }
+    
+    #uploadedImage:hover {
+      transform: scale(1.02);
+      box-shadow: var(--shadow-hover);
+    }
+
+    /* Button styles */
+    button {
+      width: 100%;
+      padding: 18px;
+      background: var(--gradient);
+      color: white;
+      border: none;
+      border-radius: 50px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 1.1rem;
+      transition: var(--transition);
+      box-shadow: 0 8px 25px rgba(255, 107, 107, 0.3);
+      margin-top: 20px;
+      position: relative;
+      overflow: hidden;
+      z-index: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+    
+    button i {
+      font-size: 1.2rem;
+    }
+    
+    button::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: var(--gradient-dark);
+      opacity: 0;
+      transition: opacity 0.4s;
+      z-index: -1;
+    }
+    
+    button:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 12px 30px rgba(255, 107, 107, 0.4);
+    }
+    
+    button:hover::after {
+      opacity: 1;
+    }
+    
+    button:active {
+      transform: translateY(2px);
+    }
+
+    /* Result styles */
+    .result {
+      margin-top: 30px;
+      padding: 30px;
+      background: rgba(255, 255, 255, 0.9);
+      border-radius: 20px;
+      text-align: center;
+      font-size: 1.4rem;
+      font-weight: 600;
+      color: var(--primary-dark);
+      box-shadow: var(--shadow);
+      transition: var(--transition);
+      position: relative;
+      overflow: hidden;
+      border-left: 5px solid var(--primary);
+    }
+    
+    .result::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(135deg, rgba(255, 107, 107, 0.1), rgba(78, 205, 196, 0.1));
+      z-index: -1;
+    }
+    
+    .result:hover {
+      transform: translateY(-5px);
+      box-shadow: var(--shadow-hover);
+    }
+    
+    .result strong {
+      color: var(--primary-dark);
+      font-weight: 700;
+      background: var(--gradient);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+
+    /* Image section */
+    .image-section {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 40px;
+      background: rgba(255, 255, 255, 0.9);
+      border-radius: 20px;
+      box-shadow: var(--shadow);
+      position: relative;
+      overflow: hidden;
+      transition: var(--transition);
+      border: 1px solid rgba(0, 0, 0, 0.05);
+    }
+    
+    .image-section:hover {
+      transform: translateY(-5px);
+      box-shadow: var(--shadow-hover);
+    }
+    
+    .image-section::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 8px;
+      background: var(--gradient);
+    }
+    
+    .body-type-label {
+      font-family: 'Montserrat', sans-serif;
+      font-size: 1.5rem;
+      font-weight: 800;
+      color: var(--dark);
+      margin-bottom: 25px;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      position: relative;
+      padding-bottom: 15px;
+      text-align: center;
+    }
+    
+    .body-type-label::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 80px;
+      height: 4px;
+      background: var(--gradient);
+      border-radius: 2px;
+    }
+    
+    .body-type-image {
+      width: 100%;
+      height: 400px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+    
+    .body-type-image::before {
+      content: '';
+      position: absolute;
+      width: 250px;
+      height: 250px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(255, 107, 107, 0.1) 0%, rgba(255,255,255,0) 70%);
+      filter: blur(30px);
+      z-index: 0;
+      animation: pulse 4s ease-in-out infinite;
+    }
+    
+    @keyframes pulse {
+      0% { transform: scale(1); opacity: 0.6; }
+      50% { transform: scale(1.1); opacity: 0.3; }
+      100% { transform: scale(1); opacity: 0.6; }
+    }
+    
+    .body-type-image img {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+      border-radius: 15px;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.15);
+      transition: var(--transition);
+      position: relative;
+      z-index: 1;
+    }
+    
+    .body-type-image img:hover {
+      transform: scale(1.05) rotate(2deg);
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.2);
+    }
+
+    /* Quiz styles */
+    .quiz-progress {
+      height: 10px;
+      background: #f0f0f0;
+      border-radius: 5px;
+      margin-bottom: 30px;
+      overflow: hidden;
+      box-shadow: inset 0 2px 5px rgba(0,0,0,0.1);
+    }
+    
+    .quiz-progress-bar {
+      height: 100%;
+      background: var(--gradient);
+      border-radius: 5px;
+      transition: width 0.6s cubic-bezier(0.65, 0, 0.35, 1);
+      position: relative;
+    }
+    
+    .quiz-progress-bar::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: linear-gradient(90deg, 
+                  transparent, 
+                  rgba(255,255,255,0.5), 
+                  transparent);
+      animation: progressShine 2.5s infinite;
+    }
+    
+    @keyframes progressShine {
+      0% { transform: translateX(-100%); }
+      100% { transform: translateX(100%); }
+    }
+    
+    .quiz-question {
+      margin-bottom: 30px;
+      padding: 30px;
+      background: rgba(255, 255, 255, 0.9);
+      border-radius: 20px;
+      box-shadow: var(--shadow);
+      transition: var(--transition);
+    }
+    
+    .quiz-question:hover {
+      transform: translateY(-5px);
+      box-shadow: var(--shadow-hover);
+    }
+    
+    .quiz-question h3 {
+      margin-top: 0;
+      color: var(--primary-dark);
+      font-size: 1.2rem;
+      margin-bottom: 20px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    .quiz-question h3 span {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 30px;
+      height: 30px;
+      background: var(--gradient);
+      color: white;
+      border-radius: 50%;
+      font-size: 0.9rem;
+    }
+    
+    .quiz-options {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+    }
+    
+    .quiz-option {
+      display: flex;
+      align-items: center;
+      padding: 18px 20px;
+      background: white;
+      border-radius: 15px;
+      cursor: pointer;
+      transition: var(--transition);
+      border: 1px solid #eee;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .quiz-option:hover {
+      background: rgba(255, 107, 107, 0.05);
+      border-color: var(--primary-light);
+      transform: translateX(5px);
+    }
+    
+    .quiz-option input {
+      margin-right: 15px;
+      accent-color: var(--primary);
+      transform: scale(1.3);
+      cursor: pointer;
+    }
+    
+    .quiz-navigation {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 30px;
+      gap: 15px;
+    }
+    
+    .quiz-navigation button {
+      width: auto;
+      padding: 15px 30px;
+      border-radius: 50px;
+      flex: 1;
+    }
+    
+    .quiz-navigation button i {
+      font-size: 1rem;
+    }
+
+    /* Confetti effect */
+    .confetti {
+      position: absolute;
+      width: 12px;
+      height: 12px;
+      background-color: var(--primary);
+      opacity: 0;
+      z-index: 10;
+      animation: confetti 3s ease-in-out;
+    }
+    
+    @keyframes confetti {
+      0% { 
+        transform: translateY(0) rotate(0deg); 
+        opacity: 1;
+      }
+      100% { 
+        transform: translateY(500px) rotate(360deg); 
+        opacity: 0;
+      }
+    }
+
+    /* Tooltip */
+    .tooltip {
+      position: relative;
+      display: inline-flex;
+      cursor: pointer;
+      margin-left: 5px;
+    }
+    
+    .tooltip i {
+      color: var(--primary-light);
+      font-size: 1rem;
+    }
+    
+    .tooltip .tooltiptext {
+      visibility: hidden;
+      width: 220px;
+      background-color: var(--dark);
+      color: #fff;
+      text-align: center;
+      border-radius: 10px;
+      padding: 12px;
+      position: absolute;
+      z-index: 1;
+      bottom: 125%;
+      left: 50%;
+      transform: translateX(-50%);
+      opacity: 0;
+      transition: opacity 0.3s;
+      font-size: 0.9rem;
+      font-weight: normal;
+      line-height: 1.5;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+    }
+    
+    .tooltip .tooltiptext::after {
+      content: "";
+      position: absolute;
+      top: 100%;
+      left: 50%;
+      margin-left: -5px;
+      border-width: 5px;
+      border-style: solid;
+      border-color: var(--dark) transparent transparent transparent;
+    }
+    
+    .tooltip:hover .tooltiptext {
+      visibility: visible;
+      opacity: 1;
+    }
+
+    /* Responsive styles */
+    @media (max-width: 1024px) {
+      .container {
+        grid-template-columns: 1fr;
+        margin: 30px 20px;
+        padding: 30px;
+      }
+      
+      h1 {
+        font-size: 2.5rem;
+      }
+      
+      .image-section {
+        order: -1;
+        margin-bottom: 40px;
+      }
+      
+      .body-type-image {
+        height: 350px;
+      }
+    }
+
+    @media (max-width: 768px) {
+      h1 {
+        font-size: 2.2rem;
+      }
+      
+      .subtitle {
+        font-size: 1rem;
+      }
+      
+      .tab-button {
+        padding: 12px 20px;
+        font-size: 0.9rem;
+      }
+      
+      .quiz-question {
+        padding: 25px;
+      }
+      
+      .quiz-navigation {
+        flex-direction: column;
+      }
+      
+      .quiz-navigation button {
+        width: 100%;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .container {
+        margin: 20px 15px;
+        padding: 25px;
+      }
+      
+      h1 {
+        font-size: 1.8rem;
+      }
+      
+      .tabs {
+        flex-direction: column;
+        align-items: stretch;
+        padding: 8px;
+      }
+      
+      .tab-button {
+        width: 100%;
+        margin: 3px 0;
+        justify-content: center;
+      }
+      
+      .body-type-image {
+        height: 280px;
+      }
+      
+      .result {
+        padding: 25px;
+        font-size: 1.2rem;
+      }
+    }
+
+    .chatbot-button {
+      position: fixed;
+      bottom: 30px;
+      right: 30px;
+      background: var(--gradient);
+      color: white;
+      padding: 15px 20px;
+      border-radius: 50px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      cursor: pointer;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+      z-index: 1000;
+      transition: var(--transition);
+      font-weight: 600;
+    }
+    
+    .chatbot-button:hover {
+      transform: translateY(-5px) scale(1.05);
+      box-shadow: 0 15px 30px rgba(0, 0, 0, 0.3);
+      background: var(--gradient-dark);
+    }
+    
+    .chatbot-button i {
+      font-size: 1.5rem;
+    }
+    
+    @media (max-width: 768px) {
+      .chatbot-button {
+        bottom: 20px;
+        right: 20px;
+        padding: 12px 15px;
+      }
+      
+      .chatbot-button span {
+        display: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Floating background elements -->
+  <div class="bg-circle circle-1"></div>
+  <div class="bg-circle circle-2"></div>
+  <div class="bg-circle circle-3"></div>
+
+  <div class="chatbot-button" id="chatbotButton">
+    <i class="fas fa-robot"></i>
+    <span>AI Assistant</span>
+  </div>
+
+  <div class="container">
+    <div class="header">
+      <h1>Discover Your Body Type</h1>
+      <p class="subtitle">Find out your unique body shape and get personalized recommendations to enhance your natural beauty</p>
+    </div>
+    
+    <div class="tabs">
+      <button class="tab-button active" id="manualTabBtn"><i class="fas fa-ruler-combined"></i> Manual Input</button>
+      <button class="tab-button" id="imageTabBtn"><i class="fas fa-camera"></i> Image Analysis</button>
+      <button class="tab-button" id="quizTabBtn"><i class="fas fa-question-circle"></i> Body Type Quiz</button>
+    </div>
+
+    <!-- Manual Input Tab -->
+    <div id="manual-tab" class="tab-content active">
+      <div class="form-group">
+        <label for="height"><i class="fas fa-arrows-alt-v"></i> Height (cm): <span class="tooltip"><i class="fas fa-info-circle"></i><span class="tooltiptext">Measure from the top of your head to your feet without shoes</span></span></label>
+        <div class="range-container">
+          <input type="range" id="height" min="100" max="250" value="170" oninput="this.nextElementSibling.value = this.value">
+          <output>170</output>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="weight"><i class="fas fa-weight"></i> Weight (kg): <span class="tooltip"><i class="fas fa-info-circle"></i><span class="tooltiptext">Your current body weight, measured in the morning</span></span></label>
+        <div class="range-container">
+          <input type="range" id="weight" min="30" max="200" value="70" oninput="this.nextElementSibling.value = this.value">
+          <output>70</output>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="bust"><i class="fas fa-tshirt"></i> Bust (cm): <span class="tooltip"><i class="fas fa-info-circle"></i><span class="tooltiptext">Measure around the fullest part of your bust, keeping the tape parallel to the floor</span></span></label>
+        <div class="range-container">
+          <input type="range" id="bust" min="60" max="120" value="90" oninput="this.nextElementSibling.value = this.value">
+          <output>90</output>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="waist"><i class="fas fa-waist"></i> Waist (cm): <span class="tooltip"><i class="fas fa-info-circle"></i><span class="tooltiptext">Measure around the narrowest part of your waist, typically above your belly button</span></span></label>
+        <div class="range-container">
+          <input type="range" id="waist" min="50" max="120" value="75" oninput="this.nextElementSibling.value = this.value">
+          <output>75</output>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="hips"><i class="fas fa-vest"></i> Hips (cm): <span class="tooltip"><i class="fas fa-info-circle"></i><span class="tooltiptext">Measure around the fullest part of your hips, about 8 inches below your waist</span></span></label>
+        <div class="range-container">
+          <input type="range" id="hips" min="60" max="130" value="95" oninput="this.nextElementSibling.value = this.value">
+          <output>95</output>
+        </div>
+      </div>
+
+      <button id="calculateBtn"><i class="fas fa-magic"></i> Calculate Body Type</button>
+      <div class="result" id="manual-result"></div>
+    </div>
+
+    <!-- Image Analysis Tab -->
+    <div id="image-tab" class="tab-content">
+      <div class="file-upload">
+        <label for="imageUpload" class="file-upload-label">
+          <i class="fas fa-cloud-upload-alt"></i>
+          <span>Choose or Drag & Drop an Image</span>
+          <small>(Full body, front view works best)</small>
+        </label>
+        <input type="file" id="imageUpload" accept="image/*" />
+      </div>
+      <img id="uploadedImage" class="animate__animated" />
+      <button id="analyzeBtn"><i class="fas fa-search"></i> Analyze Your Body Type</button>
+      <div class="result" id="image-result"></div>
+    </div>
+
+    <!-- Quiz Tab -->
+    <div id="quiz-tab" class="tab-content">
+      <div class="quiz-progress">
+        <div class="quiz-progress-bar" id="quizProgress"></div>
+      </div>
+      
+      <div id="quizQuestions">
+        <!-- Questions will be loaded here dynamically -->
+      </div>
+      
+      <div class="quiz-navigation">
+        <button id="prevQuestionBtn" style="display: none;"><i class="fas fa-arrow-left"></i> Previous</button>
+        <button id="nextQuestionBtn">Next <i class="fas fa-arrow-right"></i></button>
+        <button id="submitQuizBtn" style="display: none;"><i class="fas fa-paper-plane"></i> Submit Quiz</button>
+      </div>
+      
+      <div class="result" id="quiz-result" style="display: none;"></div>
+    </div>
+
+    <!-- Image Section for All Tabs -->
+    <div class="image-section">
+      <div class="body-type-label" id="bodyTypeLabel">YOUR BODY TYPE</div>
+      <div class="body-type-image" id="bodyTypeImage">
+        <img src="https://global-uploads.webflow.com/5eca30fd2b50b671e2107b06/5ee75925921007691cf74eda_Rectangle%20Body%20Shape%201.png" alt="Body Type Illustration" style="display: block;" />
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+    import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+    import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+    
+    // Your Firebase configuration
+    const firebaseConfig = {
+      apiKey: "AIzaSyCPQJnvxTkH6DtW2Dfok9J8g-CkNGQIMc8",
+      authDomain: "bodyflaree.firebaseapp.com",
+      databaseURL: "https://bodyflaree-default-rtdb.firebaseio.com",
+      projectId: "bodyflaree",
+      storageBucket: "bodyflaree.appspot.com",
+      messagingSenderId: "620829873565",
+      appId: "1:620829873565:web:569e7daf160be174730b74",
+      measurementId: "G-4PF6G95DBE"
+    };
+
+    // Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const database = getDatabase(app);
+    const db = getFirestore(app);
+
+    // DOM Elements
+    const manualTabBtn = document.getElementById('manualTabBtn');
+    const imageTabBtn = document.getElementById('imageTabBtn');
+    const quizTabBtn = document.getElementById('quizTabBtn');
+    const calculateBtn = document.getElementById('calculateBtn');
+    const analyzeBtn = document.getElementById('analyzeBtn');
+    const imageUpload = document.getElementById('imageUpload');
+    
+    // Quiz elements
+    const quizQuestionsContainer = document.getElementById('quizQuestions');
+    const prevQuestionBtn = document.getElementById('prevQuestionBtn');
+    const nextQuestionBtn = document.getElementById('nextQuestionBtn');
+    const submitQuizBtn = document.getElementById('submitQuizBtn');
+    const quizResult = document.getElementById('quiz-result');
+    const quizProgress = document.getElementById('quizProgress');
+
+    // Quiz data
+    const quizData = [
+      {
+        question: "Which best describes your shoulder width compared to your hips?",
+        options: [
+          { text: "My shoulders are narrower than my hips", value: "pear" },
+          { text: "My shoulders are about the same width as my hips", value: "hourglass" },
+          { text: "My shoulders are wider than my hips", value: "apple" },
+          { text: "My shoulders and hips are about the same width with little waist definition", value: "rectangle" }
+        ]
+      },
+      {
+        question: "Where do you tend to gain weight first?",
+        options: [
+          { text: "Hips and thighs", value: "pear" },
+          { text: "All over evenly", value: "hourglass" },
+          { text: "Midsection (belly)", value: "apple" },
+          { text: "Not particularly in one area", value: "rectangle" }
+        ]
+      },
+      {
+        question: "How would you describe your waist?",
+        options: [
+          { text: "Defined and noticeably smaller than bust and hips", value: "hourglass" },
+          { text: "Slightly defined but not dramatically smaller", value: "pear" },
+          { text: "Not very defined, similar width to bust and hips", value: "rectangle" },
+          { text: "Not defined, may be wider than hips", value: "apple" }
+        ]
+      },
+      {
+        question: "Which clothing styles typically fit you best?",
+        options: [
+          { text: "Fitted at top, flowy at bottom", value: "pear" },
+          { text: "Fitted at waist, balanced top and bottom", value: "hourglass" },
+          { text: "Structured shoulders, flowy at bottom", value: "apple" },
+          { text: "Straight cuts, not too fitted", value: "rectangle" }
+        ]
+      }
+    ];
+
+    let currentQuestionIndex = 0;
+    let quizAnswers = [];
+    let quizScore = { hourglass: 0, pear: 0, apple: 0, rectangle: 0 };
+
+    // Switch between tabs
+    function switchTab(tabName) {
+      document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+      document.querySelectorAll('.tab-button').forEach(button => button.classList.remove('active'));
+      document.getElementById(`${tabName}-tab`).classList.add('active');
+      document.getElementById(`${tabName}TabBtn`).classList.add('active');
+      
+      // Initialize quiz if that's the tab we're switching to
+      if (tabName === 'quiz') {
+        initializeQuiz();
+      }
+    }
+
+    // Initialize the quiz
+    function initializeQuiz() {
+      currentQuestionIndex = 0;
+      quizAnswers = [];
+      quizScore = { hourglass: 0, pear: 0, apple: 0, rectangle: 0 };
+      loadQuestion(currentQuestionIndex);
+      updateQuizNavigation();
+      quizResult.style.display = 'none';
+    }
+
+    // Load a quiz question
+    function loadQuestion(index) {
+      if (index < 0 || index >= quizData.length) return;
+      
+      const question = quizData[index];
+      let html = `
+        <div class="quiz-question animate__animated animate__fadeIn">
+          <h3>Question ${index + 1} of ${quizData.length}</h3>
+          <p>${question.question}</p>
+          <div class="quiz-options">
+      `;
+      
+      question.options.forEach((option, i) => {
+        const isChecked = quizAnswers[index] === i ? 'checked' : '';
+        html += `
+          <label class="quiz-option">
+            <input type="radio" name="quizOption" value="${i}" ${isChecked}>
+            ${option.text}
+          </label>
+        `;
+      });
+      
+      html += `</div></div>`;
+      quizQuestionsContainer.innerHTML = html;
+      
+      // Update progress bar
+      quizProgress.style.width = `${((index + 1) / quizData.length) * 100}%`;
+    }
+
+    // Update quiz navigation buttons
+    function updateQuizNavigation() {
+      prevQuestionBtn.style.display = currentQuestionIndex > 0 ? 'block' : 'none';
+      nextQuestionBtn.style.display = currentQuestionIndex < quizData.length - 1 ? 'block' : 'none';
+      submitQuizBtn.style.display = currentQuestionIndex === quizData.length - 1 ? 'block' : 'none';
+    }
+
+    // Save current answer and move to next question
+    function goToNextQuestion() {
+      const selectedOption = document.querySelector('input[name="quizOption"]:checked');
+      if (!selectedOption && quizAnswers[currentQuestionIndex] === undefined) {
+        alert('Please select an answer before proceeding');
+        return;
+      }
+      
+      if (selectedOption) {
+        quizAnswers[currentQuestionIndex] = parseInt(selectedOption.value);
+      }
+      
+      if (currentQuestionIndex < quizData.length - 1) {
+        currentQuestionIndex++;
+        loadQuestion(currentQuestionIndex);
+        updateQuizNavigation();
+      }
+    }
+
+    // Go back to previous question
+    function goToPreviousQuestion() {
+      if (currentQuestionIndex > 0) {
+        currentQuestionIndex--;
+        loadQuestion(currentQuestionIndex);
+        updateQuizNavigation();
+      }
+    }
+
+    // Submit the quiz and calculate results
+    function submitQuiz() {
+      const selectedOption = document.querySelector('input[name="quizOption"]:checked');
+      if (selectedOption) {
+        quizAnswers[currentQuestionIndex] = parseInt(selectedOption.value);
+      }
+      
+      // Calculate score
+      quizAnswers.forEach((answerIndex, questionIndex) => {
+        const optionValue = quizData[questionIndex].options[answerIndex].value;
+        quizScore[optionValue]++;
+      });
+      
+      // Determine body type with highest score
+      let maxScore = 0;
+      let bodyType = '';
+      let imageUrl = '';
+      
+      for (const [type, score] of Object.entries(quizScore)) {
+        if (score > maxScore) {
+          maxScore = score;
+          bodyType = type;
+        }
+      }
+      
+      // Capitalize first letter
+      bodyType = bodyType.charAt(0).toUpperCase() + bodyType.slice(1);
+      
+      // Set appropriate image
+      switch(bodyType.toLowerCase()) {
+        case 'hourglass':
+          imageUrl = 'https://global-uploads.webflow.com/5eca30fd2b50b671e2107b06/60f12a025285e1675eb6871b_Hourglass%20Body%20Shape%20Title%20Image.png';
+          break;
+        case 'pear':
+          imageUrl = 'https://global-uploads.webflow.com/5eca30fd2b50b671e2107b06/60efde82ce0dc256c05142f2_Pear%20Body%20Shape%20Title%20Image.png';
+          break;
+        case 'apple':
+          imageUrl = 'https://th.bing.com/th/id/OIP.mG1EiXCxl12SJkpYwv63UQHaJQ?rs=1&pid=ImgDetMain';
+          break;
+        default: // rectangle
+          imageUrl = 'https://global-uploads.webflow.com/5eca30fd2b50b671e2107b06/5ee75925921007691cf74eda_Rectangle%20Body%20Shape%201.png';
+      }
+      
+      // Display results
+      quizResult.style.display = 'block';
+      quizResult.innerHTML = `
+        <p>Your body type is <strong>${bodyType}</strong></p>
+        <p>Based on your answers, this body type best describes your shape.</p>
+      `;
+      
+      displayBodyTypeImage(imageUrl);
+      createConfetti();
+      
+      // Save to Firestore
+      saveBodyTypeResult(bodyType, 'quiz', {
+        answers: quizAnswers,
+        scores: quizScore
+      });
+    }
+
+    // Create confetti effect
+    function createConfetti() {
+      const container = document.querySelector('.container');
+      for (let i = 0; i < 50; i++) {
+        const confetti = document.createElement('div');
+        confetti.className = 'confetti';
+        confetti.style.left = Math.random() * 100 + '%';
+        confetti.style.backgroundColor = getRandomColor();
+        confetti.style.width = Math.random() * 10 + 5 + 'px';
+        confetti.style.height = Math.random() * 10 + 5 + 'px';
+        confetti.style.animationDuration = Math.random() * 2 + 2 + 's';
+        container.appendChild(confetti);
+        
+        // Remove confetti after animation
+        setTimeout(() => {
+          confetti.remove();
+        }, 3000);
+      }
+    }
+
+    function getRandomColor() {
+      const colors = ['#ff4d6d', '#ff8fa3', '#ffb3c1', '#ffd7ba', '#c9184a'];
+      return colors[Math.floor(Math.random() * colors.length)];
+    }
+
+    // Event Listeners
+    manualTabBtn.addEventListener('click', () => switchTab('manual'));
+    imageTabBtn.addEventListener('click', () => switchTab('image'));
+    quizTabBtn.addEventListener('click', () => switchTab('quiz'));
+    calculateBtn.addEventListener('click', calculateBodyType);
+    analyzeBtn.addEventListener('click', analyzeImage);
+    imageUpload.addEventListener('change', displayImage);
+    
+    // Quiz event listeners
+    prevQuestionBtn.addEventListener('click', goToPreviousQuestion);
+    nextQuestionBtn.addEventListener('click', goToNextQuestion);
+    submitQuizBtn.addEventListener('click', submitQuiz);
+
+    // Function to save body type results to Firestore
+    async function saveBodyTypeResult(bodyType, method, details = {}) {
+      try {
+        const user = auth.currentUser;
+        if (!user) {
+          console.log("User not logged in, skipping Firestore save");
+          return;
+        }
+
+        const resultData = {
+          userId: user.uid,
+          bodyType: bodyType,
+          method: method,
+          details: details,
+          timestamp: new Date()
+        };
+
+        // Add a new document with a generated ID
+        const docRef = await addDoc(collection(db, "bodyTypeResults"), resultData);
+        console.log("Document written with ID: ", docRef.id);
+      } catch (error) {
+        console.error("Error adding document: ", error);
+      }
+    }
+
+    // Manual Input Calculations
+    function calculateBodyType() {
+      const height = parseFloat(document.getElementById('height').value);
+      const weight = parseFloat(document.getElementById('weight').value);
+      const bust = parseFloat(document.getElementById('bust').value);
+      const waist = parseFloat(document.getElementById('waist').value);
+      const hips = parseFloat(document.getElementById('hips').value);
+
+      let bodyType = '';
+      let imageUrl = '';
+
+      if (bust > hips && bust > waist) {
+        bodyType = 'Hourglass';
+        imageUrl = 'https://global-uploads.webflow.com/5eca30fd2b50b671e2107b06/60f12a025285e1675eb6871b_Hourglass%20Body%20Shape%20Title%20Image.png';
+      } else if (bust < hips && hips > waist) {
+        bodyType = 'Pear';
+        imageUrl = 'https://global-uploads.webflow.com/5eca30fd2b50b671e2107b06/60efde82ce0dc256c05142f2_Pear%20Body%20Shape%20Title%20Image.png';
+      } else if (bust > waist && bust < hips) {
+        bodyType = 'Apple';
+        imageUrl = 'https://th.bing.com/th/id/OIP.mG1EiXCxl12SJkpYwv63UQHaJQ?rs=1&pid=ImgDetMain';
+      } else {
+        bodyType = 'Rectangle';
+        imageUrl = 'https://global-uploads.webflow.com/5eca30fd2b50b671e2107b06/5ee75925921007691cf74eda_Rectangle%20Body%20Shape%201.png';
+      }
+
+      const resultElement = document.getElementById('manual-result');
+      resultElement.innerHTML = `Your body type is <strong>${bodyType}</strong>`;
+      resultElement.classList.add('animate__animated', 'animate__pulse');
+      
+      setTimeout(() => {
+        resultElement.classList.remove('animate__animated', 'animate__pulse');
+      }, 1000);
+      
+      displayBodyTypeImage(imageUrl);
+      createConfetti();
+      
+      // Save to Firestore
+      saveBodyTypeResult(bodyType, 'manual', {
+        height: height,
+        weight: weight,
+        bust: bust,
+        waist: waist,
+        hips: hips
+      });
+    }
+
+    // Image Analysis
+    function displayImage() {
+      const file = imageUpload.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          const uploadedImage = document.getElementById('uploadedImage');
+          uploadedImage.src = e.target.result;
+          uploadedImage.style.display = 'block';
+          uploadedImage.classList.add('animate__fadeIn');
+          
+          setTimeout(() => {
+            uploadedImage.classList.remove('animate__fadeIn');
+          }, 1000);
+        };
+        reader.readAsDataURL(file);
+      }
+    }
+
+    async function analyzeImage() {
+      const file = imageUpload.files[0];
+      if (!file) {
+        alert('Please upload an image first!');
+        return;
+      }
+
+      const resultElement = document.getElementById('image-result');
+      resultElement.innerText = "Analyzing your image...";
+      resultElement.classList.add('animate__pulse');
+      
+      try {
+        const net = await posenet.load();
+        const imgElement = new Image();
+        imgElement.src = URL.createObjectURL(file);
+        imgElement.onload = async () => {
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d');
+          canvas.width = 500;
+          canvas.height = 500;
+          ctx.drawImage(imgElement, 0, 0, 500, 500);
+
+          const pose = await net.estimateSinglePose(canvas, { flipHorizontal: false });
+          const keypoints = pose.keypoints;
+
+          if (keypoints.length === 0) {
+            resultElement.innerText = "Couldn't detect body parts. Try another image.";
+            resultElement.classList.remove('animate__pulse');
+            return;
+          }
+
+          const personHeight = getDistance(keypoints[0].position, keypoints[16].position);
+          const shoulderWidth = getDistance(keypoints[5].position, keypoints[6].position);
+          const hipWidth = getDistance(keypoints[11].position, keypoints[12].position);
+
+          const normalizedShoulderWidth = shoulderWidth / personHeight;
+          const normalizedHipWidth = hipWidth / personHeight;
+          const ratio = normalizedShoulderWidth / normalizedHipWidth;
+
+          let bodyType = '';
+          let imageUrl = '';
+
+          if (ratio >= 0.9 && ratio <= 1.1) {
+            bodyType = 'Hourglass';
+            imageUrl = 'https://global-uploads.webflow.com/5eca30fd2b50b671e2107b06/60f12a025285e1675eb6871b_Hourglass%20Body%20Shape%20Title%20Image.png';
+          } else if (ratio > 1.1) {
+            bodyType = 'Apple';
+            imageUrl = 'https://th.bing.com/th/id/OIP.mG1EiXCxl12SJkpYwv63UQHaJQ?rs=1&pid=ImgDetMain';
+          } else if (ratio < 0.9) {
+            bodyType = 'Pear';
+            imageUrl = 'https://global-uploads.webflow.com/5eca30fd2b50b671e2107b06/60efde82ce0dc256c05142f2_Pear%20Body%20Shape%20Title%20Image.png';
+          } else {
+            bodyType = 'Rectangle';
+            imageUrl = 'https://global-uploads.webflow.com/5eca30fd2b50b671e2107b06/5ee75925921007691cf74eda_Rectangle%20Body%20Shape%201.png';
+          }
+
+          resultElement.innerHTML = `Your body type is <strong>${bodyType}</strong>`;
+          resultElement.classList.remove('animate__pulse');
+          resultElement.classList.add('animate__bounceIn');
+          
+          setTimeout(() => {
+            resultElement.classList.remove('animate__bounceIn');
+          }, 1000);
+          
+          displayBodyTypeImage(imageUrl);
+          createConfetti();
+          
+          // Save to Firestore
+          saveBodyTypeResult(bodyType, 'image-analysis', {
+            shoulderWidthRatio: normalizedShoulderWidth,
+            hipWidthRatio: normalizedHipWidth,
+            ratio: ratio
+          });
+        };
+      } catch (error) {
+        console.error("Error analyzing image:", error);
+        resultElement.innerText = "Error analyzing image. Please try again.";
+        resultElement.classList.remove('animate__pulse');
+      }
+    }
+
+    function getDistance(point1, point2) {
+      const dx = point2.x - point1.x;
+      const dy = point2.y - point1.y;
+      return Math.sqrt(dx * dx + dy * dy);
+    }
+
+    function displayBodyTypeImage(imageUrl) {
+      const bodyTypeImage = document.getElementById('bodyTypeImage');
+      bodyTypeImage.innerHTML = `<img src="${imageUrl}" alt="Body Type Image" class="animate__animated animate__zoomIn" />`;
+      document.getElementById('bodyTypeLabel').textContent = "YOUR BODY TYPE";
+      
+      setTimeout(() => {
+        const img = bodyTypeImage.querySelector('img');
+        if (img) img.classList.remove('animate__animated', 'animate__zoomIn');
+      }, 1000);
+    }
+
+    // Redirect logic for findYourStyle button
+    document.getElementById("findYourStyle")?.addEventListener("click", () => {
+      onAuthStateChanged(auth, (user) => {
+        if (user) {
+          window.location.href = "style.html";
+        } else {
+          alert("You need to log in first!");
+          window.location.href = "login.html";
+        }
+      });
+    });
+
+    document.getElementById('chatbotButton').addEventListener('click', () => {
+      window.location.href = 'aichatbot.html';
+    });
+  </script>
+</body>
+</html>

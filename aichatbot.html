@@ -1,0 +1,685 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StyleMatch Body Type Advisor</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f9f3f3;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .chat-container {
+            width: 100%;
+            max-width: 500px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            height: 90vh;
+        }
+
+        .chat-header {
+            background: #ff6b81;
+            color: white;
+            padding: 15px;
+            text-align: center;
+            flex-shrink: 0;
+        }
+
+        .chat-header h1 {
+            margin: 0;
+            font-size: 1.5rem;
+        }
+
+        .chat-header p {
+            margin: 5px 0 0;
+            font-size: 0.9rem;
+        }
+
+        .chat-messages {
+            flex: 1;
+            padding: 15px;
+            overflow-y: auto;
+            background: #fff9f9;
+            scroll-behavior: smooth;
+        }
+
+        .message {
+            margin-bottom: 15px;
+            padding: 10px 15px;
+            border-radius: 18px;
+            max-width: 80%;
+            word-wrap: break-word;
+            line-height: 1.4;
+        }
+
+        .bot-message {
+            background: #e2e2e2;
+            color: #333;
+            align-self: flex-start;
+            border-bottom-left-radius: 5px;
+        }
+
+        .user-message {
+            background: #ff6b81;
+            color: white;
+            align-self: flex-end;
+            margin-left: auto;
+            border-bottom-right-radius: 5px;
+        }
+
+        .chat-input {
+            display: flex;
+            padding: 10px;
+            background: #fff;
+            border-top: 1px solid #eee;
+            flex-shrink: 0;
+        }
+
+        .chat-input input {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 20px;
+            outline: none;
+        }
+
+        .chat-input button {
+            margin-left: 10px;
+            padding: 10px 15px;
+            background: #ff6b81;
+            color: white;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .chat-input button:hover {
+            background: #ff4757;
+        }
+
+        .store-link {
+            display: block;
+            margin: 8px 0;
+            padding: 12px;
+            background: #fff;
+            border-radius: 8px;
+            color: #333;
+            text-decoration: none;
+            border: 1px solid #ddd;
+            transition: all 0.3s;
+            font-size: 14px;
+        }
+
+        .store-link:hover {
+            background: #f0f0f0;
+            transform: translateX(3px);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .amazon { border-left: 4px solid #FF9900; }
+        .myntra { border-left: 4px solid #FF3F6C; }
+        .hm { border-left: 4px solid #D8226B; }
+
+        .recommendation-title {
+            font-weight: bold;
+            margin: 15px 0 10px;
+            color: #ff6b81;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 10px;
+            color: #888;
+            font-style: italic;
+        }
+
+        /* Media queries for responsive design */
+        @media (max-width: 600px) {
+            .chat-container {
+                height: 95vh;
+                max-width: 100%;
+                border-radius: 0;
+            }
+            
+            .message {
+                max-width: 90%;
+                font-size: 14px;
+            }
+            
+            .store-link {
+                padding: 10px;
+                font-size: 13px;
+            }
+            
+            .chat-header h1 {
+                font-size: 1.3rem;
+            }
+        }
+
+        @media (max-width: 400px) {
+            .chat-input {
+                flex-direction: column;
+            }
+            
+            .chat-input button {
+                margin-left: 0;
+                margin-top: 8px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <div class="chat-header">
+            <h1>👗 StyleMatch</h1>
+            <p>Your personal body type and fashion advisor</p>
+        </div>
+        <div class="chat-messages" id="chat-messages">
+            <!-- Messages will appear here -->
+        </div>
+        <div class="chat-input">
+            <input type="text" id="user-input" placeholder="Type your answer...">
+            <button id="send-btn">Send</button>
+        </div>
+    </div>
+
+    <script>
+        const chatMessages = document.getElementById('chat-messages');
+        const userInput = document.getElementById('user-input');
+        const sendBtn = document.getElementById('send-btn');
+
+        // Conversation flow state
+        let currentStep = 'bodyType';
+        let userBodyType = '';
+        let currentOccasion = '';
+        let currentStyle = '';
+        let currentPage = 1;
+        let isLoading = false;
+
+        // Initial bot message
+        addBotMessage("Welcome to StyleMatch! Let's discover your perfect outfits based on your body type. Could you describe your shape? (Hourglass, Pear, Apple, Rectangle)");
+
+        // Handle user input
+        sendBtn.addEventListener('click', sendMessage);
+        userInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') sendMessage();
+        });
+
+        // Infinite scroll implementation
+        chatMessages.addEventListener('scroll', () => {
+            const { scrollTop, scrollHeight, clientHeight } = chatMessages;
+            if (scrollTop + clientHeight >= scrollHeight - 20 && !isLoading && currentStep === 'viewingResults') {
+                loadMoreResults();
+            }
+        });
+
+        function sendMessage() {
+            const message = userInput.value.trim();
+            if (!message) return;
+
+            addUserMessage(message);
+            userInput.value = '';
+
+            // Process user response based on current step
+            if (currentStep === 'bodyType') {
+                handleBodyType(message);
+            } else if (currentStep === 'chooseOccasion') {
+                handleOccasion(message);
+            } else if (currentStep === 'chooseStyle') {
+                handleStyleChoice(message);
+            }
+        }
+
+        // Helper functions
+        function addBotMessage(text) {
+            const messageDiv = document.createElement('div');
+            messageDiv.classList.add('message', 'bot-message');
+            messageDiv.innerHTML = text;
+            chatMessages.appendChild(messageDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function addUserMessage(text) {
+            const messageDiv = document.createElement('div');
+            messageDiv.classList.add('message', 'user-message');
+            messageDiv.textContent = text;
+            chatMessages.appendChild(messageDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function showLoading() {
+            isLoading = true;
+            const loadingDiv = document.createElement('div');
+            loadingDiv.classList.add('loading');
+            loadingDiv.textContent = 'Loading more recommendations...';
+            chatMessages.appendChild(loadingDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function hideLoading() {
+            const loadingElements = document.querySelectorAll('.loading');
+            loadingElements.forEach(el => el.remove());
+            isLoading = false;
+        }
+
+        // Step handlers
+        function handleBodyType(message) {
+            const bodyTypes = ['hourglass', 'pear', 'apple', 'rectangle'];
+            const input = message.toLowerCase();
+
+            if (bodyTypes.includes(input)) {
+                userBodyType = input;
+                
+                // Body type descriptions
+                const bodyTypeDescriptions = {
+                    hourglass: "You have an hourglass body type, characterized by well-defined curves with the bust and hips around the same width and a narrow waist.",
+                    pear: "You have a pear-shaped body, where your hips are wider than your shoulders, and your waist is smaller. This shape is often defined by a narrow upper body and fuller hips and thighs.",
+                    apple: "An apple-shaped body has a fuller upper body, often with a larger bust and narrower hips. The weight tends to gather around the midsection.",
+                    rectangle: "A rectangular body shape has similar measurements at the bust, waist, and hips, with little to no defined waistline."
+                };
+                
+                addBotMessage(bodyTypeDescriptions[input]);
+                
+                currentStep = 'chooseOccasion';
+                addBotMessage("Great! What occasion are you dressing for? (Traditional, Party, Casual, Work)");
+            } else {
+                addBotMessage("I didn't understand. Please choose from these body types: Hourglass, Pear, Apple, or Rectangle.");
+            }
+        }
+
+        function handleOccasion(message) {
+            const occasions = ['traditional', 'party', 'casual', 'work'];
+            const input = message.toLowerCase();
+
+            if (occasions.includes(input)) {
+                currentOccasion = input;
+                currentStep = 'chooseStyle';
+                addBotMessage("Would you like <strong>Normal</strong> everyday recommendations or <strong>Fancy</strong> special occasion ideas for this event?");
+            } else {
+                addBotMessage("Please choose from these occasions: Traditional, Party, Casual, or Work.");
+            }
+        }
+
+        function handleStyleChoice(message) {
+            const input = message.toLowerCase();
+            const isFancy = input === 'fancy';
+            
+            if (input === 'normal' || input === 'fancy') {
+                currentStyle = isFancy ? 'fancy' : 'normal';
+                currentStep = 'viewingResults';
+                currentPage = 1;
+                showShoppingResults();
+            } else {
+                addBotMessage("Please choose 'Normal' or 'Fancy' style recommendations.");
+            }
+        }
+
+        function showShoppingResults() {
+            const title = document.createElement('div');
+            title.classList.add('recommendation-title');
+            title.textContent = `Showing ${currentStyle} recommendations for ${userBodyType} body type (${currentOccasion} occasion):`;
+            chatMessages.appendChild(title);
+
+            // Show initial results
+            loadMoreResults();
+        }
+
+        function loadMoreResults() {
+            if (isLoading) return;
+            showLoading();
+
+            // Simulate API call delay
+            setTimeout(() => {
+                hideLoading();
+                
+                // Generate shopping links for the current page
+                const links = generateShoppingLinks(userBodyType, currentOccasion, currentStyle, currentPage);
+                
+                // Always show recommendations - cycle through if needed
+                if (links.length === 0) {
+                    currentPage = 1; // Reset to first page
+                    loadMoreResults(); // Try again
+                    return;
+                }
+
+                // Append the new links
+                links.forEach(link => {
+                    const linkElement = document.createElement('a');
+                    linkElement.href = link.url;
+                    linkElement.target = '_blank';
+                    linkElement.classList.add('store-link', link.store.toLowerCase());
+                    linkElement.textContent = `${link.store}: ${link.text}`;
+                    chatMessages.appendChild(linkElement);
+                });
+
+                currentPage++;
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            }, 800); // Reduced delay for better UX
+        }
+
+        function generateShoppingLinks(bodyType, occasion, style, page) {
+            // Comprehensive recommendation database
+            const allRecommendations = {
+                hourglass: {
+                    traditional: {
+                        normal: [
+                            { store: 'Amazon', url: 'https://www.amazon.in/s?k=hourglass+lehenga+choli+set&rh=n%3A1968024031', text: 'Flared lehenga sets with fitted blouses' },
+                            { store: 'Myntra', url: 'https://www.myntra.com/lehenga-choli?f=Body%20Shape%3AHourglass', text: 'Belted sarees and anarkali suits' },
+                            { store: 'H&M', url: 'https://www2.hm.com/en_in/women/shop-by-product/dresses.html', text: 'Wrap dresses that accentuate your waist' },
+                            { store: 'Amazon', url: 'https://www.amazon.in/s?k=hourglass+traditional+kurti&rh=n%3A1968024031', text: 'Tailored kurtas with waist detailing' },
+                            { store: 'Myntra', url: 'https://www.myntra.com/suits?f=Body%20Shape%3AHourglass', text: 'Sharara suits with fitted blouses' },
+                            { store: 'H&M', url: 'https://www2.hm.com/en_in/women/shop-by-product/dresses/midi-dresses.html', text: 'Belted shirt dresses for traditional look' }
+                        ],
+                        fancy: [
+                            { store: 'Amazon', url: 'https://www.amazon.in/s?k=designer+hourglass+lehenga&rh=n%3A1968024031', text: 'Sequinned sarees and mermaid-cut lehengas' },
+                            { store: 'Myntra', url: 'https://www.myntra.com/designer-lehenga?f=Body%20Shape%3AHourglass', text: 'Corset-style cholis with voluminous skirts' },
+                            { store: 'H&M', url: 'https://www2.hm.com/en_in/women/shop-by-product/dresses/evening-dresses.html', text: 'Formal gowns with defined waists' },
+                            { store: 'Amazon', url: 'https://www.amazon.in/s?k=hourglass+bridal+lehenga&rh=n%3A1968024031', text: 'Bridal lehengas with structured blouses' },
+                            { store: 'Myntra', url: 'https://www.myntra.com/designer-wear?f=Body%20Shape%3AHourglass', text: 'Designer anarkalis with waist belts' },
+                            { store: 'H&M', url: 'https://www2.hm.com/en_in/women/shop-by-product/dresses/maxi-dresses.html', text: 'Floor-length dresses with waist emphasis' }
+                        ]
+                    },
+                    party: {
+                        normal: [
+                            { store: 'Amazon', url: 'https://www.amazon.in/s?k=hourglass+party+dress&rh=n%3A1968024031', text: 'Bodycon midi dresses that follow your curves' },
+                            { store: 'Myntra', url: 'https://www.myntra.com/party-wear-dresses?f=Body%20Shape%3AHourglass', text: 'Wrap dresses with V-necks to highlight proportions' },
+                            { store: 'H&M', url: 'https://www2.hm.com/en_in/women/shop-by-product/dresses/party-dresses.html', text: 'Fitted jumpsuits with defined waist seams' },
+                            { store: 'Amazon', url: 'https://www.amazon.in/s?k=hourglass+cocktail+dress&rh=n%3A1968024031', text: 'Cocktail dresses with waist definition' },
+                            { store: 'Myntra', url: 'https://www.myntra.com/dresses?f=Body%20Shape%3AHourglass', text: 'Body-hugging dresses for parties' },
+                            { store: 'H&M', url: 'https://www2.hm.com/en_in/women/shop-by-product/dresses/mini-dresses.html', text: 'Fitted mini dresses for parties' }
+                        ],
+                        fancy: [
+                            { store: 'Amazon', url: 'https://www.amazon.in/s?k=hourglass+evening+gown&rh=n%3A1968024031', text: 'Corset gowns with sweetheart necklines' },
+                            { store: 'Myntra', url: 'https://www.myntra.com/designer-party-wear?f=Body%20Shape%3AHourglass', text: 'Mermaid silhouette evening dresses' },
+                            { store: 'H&M', url: 'https://www2.hm.com/en_in/women/shop-by-product/dresses/evening-dresses.html', text: 'Two-piece sets with cropped tops' },
+                            { store: 'Amazon', url: 'https://www.amazon.in/s?k=hourglass+sequin+dress&rh=n%3A1968024031', text: 'Sequin dresses with waist emphasis' },
+                            { store: 'Myntra', url: 'https://www.myntra.com/party-wear?f=Body%20Shape%3AHourglass', text: 'Designer gowns with boning' },
+                            { store: 'H&M', url: 'https://www2.hm.com/en_in/women/shop-by-product/dresses/long-dresses.html', text: 'Formal gowns with waist definition' }
+                        ]
+                    },
+                    casual: {
+                        normal: [
+                            { store: 'Amazon', url: 'https://www.amazon.in/s?k=hourglass+casual+dresses&rh=n%3A1968024031', text: 'High-waisted jeans with fitted tops' },
+                            { store: 'Myntra', url: 'https://www.myntra.com/casual-dresses?f=Body%20Shape%3AHourglass', text: 'Wrap dresses with three-quarter sleeves' },
+                            { store: 'H&M', url: 'https://www2.hm.com/en_in/women/shop-by-product/dresses/summer-dresses.html', text: 'Belted shirt dresses for casual wear' },
+                            { store: 'Amazon', url: 'https://www.amazon.in/s?k=hourglass+wrap+dress&rh=n%3A1968024031', text: 'Wrap dresses that highlight your waist' },
+                            { store: 'Myntra', url: 'https://www.myntra.com/tops?f=Body%20Shape%3AHourglass', text: 'Fitted tops for casual outfits' },
+                            { store: 'H&M', url: 'https://www2.hm.com/en_in/women/shop-by-product/tops/t-shirts.html', text: 'Fitted t-shirts for casual looks' }
+                        ],
+                        fancy: [
+                            { store: 'Amazon', url: 'https://www.amazon.in/s?k=hourglass+date+night+dresses&rh=n%3A1968024031', text: 'Silk slip dresses with waist belts' },
+                            { store: 'Myntra', url: 'https://www.myntra.com/casual-dresses?f=Body%20Shape%3AHourglass&sort=popularity', text: 'Tailored shorts sets with peplum tops' },
+                            { store: 'H&M', url: 'https://www2.hm.com/en_in/women/shop-by-product/dresses/midi-dresses.html', text: 'Jumpsuits with waist detailing' },
+                            { store: 'Amazon', url: 'https://www.amazon.in/s?k=hourglass+midi+dress&rh=n%3A1968024031', text: 'Midi dresses with defined waists' },
+                            { store: 'Myntra', url: 'https://www.myntra.com/jumpsuits?f=Body%20Shape%3AHourglass', text: 'Jumpsuits that accentuate your figure' },
+                            { store: 'H&M', url: 'https://www2.hm.com/en_in/women/shop-by-product/dresses/shirt-dresses.html', text: 'Belted shirt dresses for casual elegance' }
+                        ]
+                    },
+                    work: {
+                        normal: [
+                            { store: 'Amazon', url: 'https://www.amazon.in/s?k=hourglass+work+dresses&rh=n%3A1968024031', text: 'Pencil skirts with tucked-in blouses' },
+                            { store: 'Myntra', url: 'https://www.myntra.com/workwear-dresses?f=Body%20Shape%3AHourglass', text: 'Sheath dresses with darts for shape' },
+                            { store: 'H&M', url: 'https://www2.hm.com/en_in/women/shop-by-product/suits-separates/blazers.html', text: 'Wide-leg pants with fitted tops' },
+                            { store: 'Amazon', url: 'https://www.amazon.in/s?k=hourglass+work+skirts&rh=n%3A1968024031', text: 'Tailored skirts for professional look' },
+                            { store: 'Myntra', url: 'https://www.myntra.com/trousers?f=Body%20Shape%3AHourglass', text: 'Fitted trousers for office wear' },
+                            { store: 'H&M', url: 'https://www2.hm.com/en_in/women/shop-by-product/suits-separates/skirts.html', text: 'Pencil skirts for work outfits' }
+                        ],
+                        fancy: [
+                            { store: 'Amazon', url: 'https://www.amazon.in/s?k=hourglass+pantsuits&rh=n%3A1968024031', text: 'Tailored pantsuits with cinched waists' },
+                            { store: 'Myntra', url: 'https://www.myntra.com/formal-dresses?f=Body%20Shape%3AHourglass', text: 'Midi-length structured dresses' },
+                            { store: 'H&M', url: 'https://www2.hm.com/en_in/women/shop-by-product/suits-separates/suits.html', text: 'High-waisted trousers with corset tops' },
+                            { store: 'Amazon', url: 'https://www.amazon.in/s?k=hourglass+blazer+dress&rh=n%3A1968024031', text: 'Blazer dresses with waist belts' },
+                            { store: 'Myntra', url: 'https://www.myntra.com/blazers?f=Body%20Shape%3AHourglass', text: 'Fitted blazers for professional look' },
+                            { store: 'H&M', url: 'https://www2.hm.com/en_in/women/shop-by-product/dresses/shirt-dresses.html', text: 'Structured shirt dresses for work' }
+                        ]
+                    }
+                },
+                pear: {
+                    traditional: {
+                        normal: [
+                            { store: 'Amazon', url: 'https://www.amazon.in/s?k=pear+shape+lehenga&rh=n%3A1968024031', text: 'A-line lehengas with embellished cholis' },
+                            { store: 'Myntra', url: 'https://www.myntra.com/lehenga-choli?f=Body%20Shape%3APear', text: 'Sarees with bold prints on the pallu' },
+                            { store: 'H&M', url: 'https://www2.hm.com/en_in/women/shop-by-product/dresses/maxi-dresses.html', text: 'Anarkalis with vertical prints' },
+                            { store: 'Amazon', url: 'https://www.amazon.in/s?k=pear+shape+kurti&rh=n%3A1968024031', text: 'Kurtas with detailed necklines' },
+                            { store: 'Myntra', url: 'https://www.myntra.com/suits?f=Body%20Shape%3APear', text: 'Sharara suits with detailed tops' },
+                            { store: 'H&M', url: 'https://www2.hm.com/en_in/women/shop-by-product/dresses/shirt-dresses.html', text: 'Shirt dresses that balance proportions' }
+                        ],
+                        fancy: [
+                            { store: 'Amazon', url: 'https://www.amazon.in/s?k=pear+shape+designer+lehenga&rh=n%3A1968024031', text: 'Floor-length anarkalis with heavy embroidery' },
+                            { store: 'Myntra', url: 'https://www.myntra.com/designer-lehenga?f=Body%20Shape%3APear', text: 'Lehengas with voluminous skirts' },
+                            { store: 'H&M', url: 'https://www2.hm.com/en_in/women/shop-by-product/dresses/evening-dresses.html', text: 'Jacket-style sarees with detailed sleeves' },
+                            { store: 'Amazon', url: 'https://www.amazon.in/s?k=pear+shape+bridal+lehenga&rh=n%3A1968024031', text: 'Bridal lehengas with detailed blouses' },
+                            { store: 'Myntra', url: 'https://www.myntra.com/designer-wear?f=Body%20Shape%3APear', text: 'Designer gowns with structured tops' },
+                            { store: 'H&M', url: 'https://www2.hm.com/en_in/women/shop-by-product/dresses/maxi-dresses.html', text: 'Maxi dresses with detailed bodices' }
+                        ]
+                    },
+                    party: {
+                        normal: [
+                            { store: 'Amazon', url: 'https://www.amazon.in/s?k=pear+shape+party+dress&rh=n%3A1968024031', text: 'Off-shoulder tops with flared skirts' },
+                            { store: 'Myntra', url: 'https://www.myntra.com/party-wear-dresses?f=Body%20Shape%3APear', text: 'Fit-and-flare dresses with detailed bodices' },
+                            { store: 'H&M', url: 'https://www2.hm.com/en_in/women/shop-by-product/dresses/party-dresses.html', text: 'Cold-shoulder tops with straight-leg pants' },
+                            { store: 'Amazon', url: 'https://www.amazon.in/s?k=pear+shape+cocktail+dress&rh=n%3A1968024031', text: 'Cocktail dresses with detailed tops' },
+                            { store: 'Myntra', url: 'https://www.myntra.com/dresses?f=Body%20Shape%3APear', text: 'Dresses with embellished necklines' },
+                            { store: 'H&M', url: 'https://www2.hm.com/en_in/women/shop-by-product/dresses/mini-dresses.html', text: 'Fit-and-flare mini dresses' }
+                        ],
+                        fancy: [
+                            { store: 'Amazon', url: 'https://www.amazon.in/s?k=pear+shape+evening+gown&rh=n%3A1968024031', text: 'Empire waist gowns with embellished straps' },
+                            { store: 'Myntra', url: 'https://www.myntra.com/designer-party-wear?f=Body%20Shape%3APear', text: 'Ballgowns with structured bodices' },
+                            { store: 'H&M', url: 'https://www2.hm.com/en_in/women/shop-by-product/dresses/evening-dresses.html', text: 'Two-piece sets with cropped jackets' },
+                            { store: 'Amazon', url: 'https://www.amazon.in/s?k=pear+shape+sequin+dress&rh=n%3A1968024031', text: 'Sequin dresses with detailed tops' },
+                            { store: 'Myntra', url: 'https://www.myntra.com/party-wear?f=Body%20Shape%3APear', text: 'Designer gowns with structured tops' },
+                            { store: 'H&M', url: 'https://www2.hm.com/en_in/women/shop-by-product/dresses/long-dresses.html', text: 'Long dresses with detailed bodices' }
+                        ]
+                    },
+                    casual: {
+                        normal: [
+                            { store: 'Amazon', url: 'https://www.amazon.in/s?k=pear+shape+casual+dresses&rh=n%3A1968024031', text: 'Dark jeans with bright-colored tops' },
+                            { store: 'Myntra', url: 'https://www.myntra.com/casual-dresses?f=Body%20Shape%3APear', text: 'Tunics with leggings and statement jewelry' },
+                            { store: 'H&M', url: 'https://www2.hm.com/en_in/women/shop-by-product/dresses/summer-dresses.html', text: 'Shift dresses with denim jackets' },
+                            { store: 'Amazon', url: 'https://www.amazon.in/s?k=pear+shape+wrap+dress&rh=n%3A1968024031', text: 'Wrap dresses that balance proportions' },
+                            { store: 'Myntra', url: 'https://www.myntra.com/tops?f=Body%20Shape%3APear', text: 'Detailed tops for casual outfits' },
+                            { store: 'H&M', url: 'https://www2.hm.com/en_in/women/shop-by-product/tops/t-shirts.html', text: 'T-shirts with interesting necklines' }
+                        ],
+                        fancy: [
+                            { store: 'Amazon', url: 'https://www.amazon.in/s?k=pear+shape+date+night+dresses&rh=n%3A1968024031', text: 'Peplum tops with straight-fit pants' },
+                            { store: 'Myntra', url: 'https://www.myntra.com/casual-dresses?f=Body%20Shape%3APear&sort=popularity', text: 'Wrap-style midi dresses' },
+                            { store: 'H&M', url: 'https://www2.hm.com/en_in/women/shop-by-product/dresses/midi-dresses.html', text: 'Jumpsuits with wide legs' },
+                            { store: 'Amazon', url: 'https://www.amazon.in/s?k=pear+shape+midi+dress&rh=n%3A1968024031', text: 'Midi dresses with detailed tops' },
+                            { store: 'Myntra', url: 'https://www.myntra.com/jumpsuits?f=Body%20Shape%3APear', text: 'Jumpsuits that balance proportions' },
+                            { store: 'H&M', url: 'https://www2.hm.com/en_in/women/shop-by-product/dresses/shirt-dresses.html', text: 'Shirt dresses with belts' }
+                        ]
+                    },
+                    work: {
+                        normal: [
+                            { store: 'Amazon', url: 'https://www.amazon.in/s?k=pear+shape+work+dresses&rh=n%3A1968024031', text: 'Structured blazers with A-line skirts' },
+                            { store: 'Myntra', url: 'https://www.myntra.com/workwear-dresses?f=Body%20Shape%3APear', text: 'Wrap dresses with three-quarter sleeves' },
+                            { store: 'H&M', url: 'https://www2.hm.com/en_in/women/shop-by-product/suits-separates/skirts.html', text: 'Wide-leg pants with tucked-in blouses' },
+                            { store: 'Amazon', url: 'https://www.amazon.in/s?k=pear+shape+work+skirts&rh=n%3A1968024031', text: 'A-line skirts for professional look' },
+                            { store: 'Myntra', url: 'https://www.myntra.com/trousers?f=Body%20Shape%3APear', text: 'Tailored trousers for office wear' },
+                            { store: 'H&M', url: 'https://www2.hm.com/en_in/women/shop-by-product/suits-separates/skirts.html', text: 'Pencil skirts with detailed tops' }
+                        ],
+                        fancy: [
+                            { store: 'Amazon', url: 'https://www.amazon.in/s?k=pear+shape+pantsuits&rh=n%3A1968024031', text: 'Wide-leg pants with statement sleeves' },
+                            { store: 'Myntra', url: 'https://www.myntra.com/formal-dresses?f=Body%20Shape%3APear', text: 'Midi-length dresses with belted waists' },
+                            { store: 'H&M', url: 'https://www2.hm.com/en_in/women/shop-by-product/suits-separates/suits.html', text: 'Pantsuits with shoulder pads' },
+                            { store: 'Amazon', url: 'https://www.amazon.in/s?k=pear+shape+blazer+dress&rh=n%3A1968024031', text: 'Blazer dresses with waist definition' },
+                            { store: 'Myntra', url: 'https://www.myntra.com/blazers?f=Body%20Shape%3APear', text: 'Structured blazers for professional look' },
+                            { store: 'H&M', url: 'https://www2.hm.com/en_in/women/shop-by-product/dresses/shirt-dresses.html', text: 'Shirt dresses with belts' }
+                        ]
+                    }
+                },
+                apple: {
+                    traditional: {
+                        normal: [
+                            { store: 'Amazon', url: 'https://www.amazon.in/s?k=apple+shape+lehenga&rh=n%3A1968024031', text: 'Empire waist lehengas' },
+                            { store: 'Myntra', url: 'https://www.myntra.com/lehenga-choli?f=Body%20Shape%3AApple', text: 'Sarees with vertical border prints' },
+                            { store: 'H&M', url: 'https://www2.hm.com/en_in/women/shop-by-product/dresses/maxi-dresses.html', text: 'Anarkalis with vertical pleats' },
+                            { store: 'Amazon', url: 'https://www.amazon.in/s?k=apple+shape+kurti&rh=n%3A1968024031', text: 'Kurtas with empire waists' },
+                            { store: 'Myntra', url: 'https://www.myntra.com/suits?f=Body%20Shape%3AApple', text: 'Anarkali suits with flowy silhouettes' },
+                            { store: 'H&M', url: 'https://www2.hm.com/en_in/women/shop-by-product/dresses/shirt-dresses.html', text: 'Shirt dresses that elongate frame' }
+                        ],
+                        fancy: [
+                            { store: 'Amazon', url: 'https://www.amazon.in/s?k=apple+shape+designer+lehenga&rh=n%3A1968024031', text: 'Jacket-style sarees with embroidery' },
+                            { store: 'Myntra', url: 'https://www.myntra.com/designer-lehenga?f=Body%20Shape%3AApple', text: 'High-waist lehengas with structured blouses' },
+                            { store: 'H&M', url: 'https://www2.hm.com/en_in/women/shop-by-product/dresses/evening-dresses.html', text: 'Floor-length gowns with empire waists' },
+                            { store: 'Amazon', url: 'https://www.amazon.in/s?k=apple+shape+bridal+lehenga&rh=n%3A1968024031', text: 'Bridal lehengas with detailed blouses' },
+                            { store: 'Myntra', url: 'https://www.myntra.com/designer-wear?f=Body%20Shape%3AApple', text: 'Designer gowns with empire waists' },
+                            { store: 'H&M', url: 'https://www2.hm.com/en_in/women/shop-by-product/dresses/maxi-dresses.html', text: 'Maxi dresses with V-necks' }
+                        ]
+                    },
+                    party: {
+                        normal: [
+                            { store: 'Amazon', url: 'https://www.amazon.in/s?k=apple+shape+party+dress&rh=n%3A1968024031', text: 'V-neck fit-and-flare dresses' },
+                            { store: 'Myntra', url: 'https://www.myntra.com/party-wear-dresses?f=Body%20Shape%3AApple', text: 'Wrap dresses with three-quarter sleeves' },
+                            { store: 'H&M', url: 'https://www2.hm.com/en_in/women/shop-by-product/dresses/party-dresses.html', text: 'Tunic tops with straight-leg pants' },
+                            { store: 'Amazon', url: 'https://www.amazon.in/s?k=apple+shape+cocktail+dress&rh=n%3A1968024031', text: 'Cocktail dresses with V-necks' },
+                            { store: 'Myntra', url: 'https://www.myntra.com/dresses?f=Body%20Shape%3AApple', text: 'Dresses with empire waists' },
+                            { store: 'H&M', url: 'https://www2.hm.com/en_in/women/shop-by-product/dresses/mini-dresses.html', text: 'Fit-and-flare mini dresses' }
+                        ],
+                        fancy: [
+                            { store: 'Amazon', url: 'https://www.amazon.in/s?k=apple+shape+evening+gown&rh=n%3A1968024031', text: 'High-low hem gowns with embellished bodices' },
+                            { store: 'Myntra', url: 'https://www.myntra.com/designer-party-wear?f=Body%20Shape%3AApple', text: 'Empire waist evening dresses' },
+                            { store: 'H&M', url: 'https://www2.hm.com/en_in/women/shop-by-product/dresses/evening-dresses.html', text: 'Structured jumpsuits with wide legs' },
+                            { store: 'Amazon', url: 'https://www.amazon.in/s?k=apple+shape+sequin+dress&rh=n%3A1968024031', text: 'Sequin dresses with empire waists' },
+                            { store: 'Myntra', url: 'https://www.myntra.com/party-wear?f=Body%20Shape%3AApple', text: 'Designer gowns with empire waists' },
+                            { store: 'H&M', url: 'https://www2.hm.com/en_in/women/shop-by-product/dresses/long-dresses.html', text: 'Long dresses with V-necks' }
+                        ]
+                    },
+                    casual: {
+                        normal: [
+                            { store: 'Amazon', url: 'https://www.amazon.in/s?k=apple+shape+casual+dresses&rh=n%3A1968024031', text: 'Tunics with leggings' },
+                            { store: 'Myntra', url: 'https://www.myntra.com/casual-dresses?f=Body%20Shape%3AApple', text: 'Open-front cardigans with camisoles' },
+                            { store: 'H&M', url: 'https://www2.hm.com/en_in/women/shop-by-product/dresses/summer-dresses.html', text: 'Shift dresses with thin belts' },
+                            { store: 'Amazon', url: 'https://www.amazon.in/s?k=apple+shape+wrap+dress&rh=n%3A1968024031', text: 'Wrap dresses that elongate frame' },
+                            { store: 'Myntra', url: 'https://www.myntra.com/tops?f=Body%20Shape%3AApple', text: 'Tops with V-necks for casual wear' },
+                            { store: 'H&M', url: 'https://www2.hm.com/en_in/women/shop-by-product/tops/t-shirts.html', text: 'T-shirts with vertical details' }
+                        ],
+                        fancy: [
+                            { store: 'Amazon', url: 'https://www.amazon.in/s?k=apple+shape+date+night+dresses&rh=n%3A1968024031', text: 'Shift dresses with bold accessories' },
+                            { store: 'Myntra', url: 'https://www.myntra.com/casual-dresses?f=Body%20Shape%3AApple&sort=popularity', text: 'Palazzo suits with long jackets' },
+                            { store: 'H&M', url: 'https://www2.hm.com/en_in/women/shop-by-product/dresses/midi-dresses.html', text: 'Kimono-style tops with slim pants' },
+                            { store: 'Amazon', url: 'https://www.amazon.in/s?k=apple+shape+midi+dress&rh=n%3A1968024031', text: 'Midi dresses with empire waists' },
+                            { store: 'Myntra', url: 'https://www.myntra.com/jumpsuits?f=Body%20Shape%3AApple', text: 'Jumpsuits with empire waists' },
+                            { store: 'H&M', url: 'https://www2.hm.com/en_in/women/shop-by-product/dresses/shirt-dresses.html', text: 'Shirt dresses with belts' }
+                        ]
+                    },
+                    work: {
+                        normal: [
+                            { store: 'Amazon', url: 'https://www.amazon.in/s?k=apple+shape+work+dresses&rh=n%3A1968024031', text: 'Wrap dresses with blazers' },
+                            { store: 'Myntra', url: 'https://www.myntra.com/workwear-dresses?f=Body%20Shape%3AApple', text: 'Tunic-length tops with straight-leg pants' },
+                            { store: 'H&M', url: 'https://www2.hm.com/en_in/women/shop-by-product/suits-separates/blazers.html', text: 'Shirt dresses with thin waist belts' },
+                            { store: 'Amazon', url: 'https://www.amazon.in/s?k=apple+shape+work+skirts&rh=n%3A1968024031', text: 'A-line skirts for professional look' },
+                            { store: 'Myntra', url: 'https://www.myntra.com/trousers?f=Body%20Shape%3AApple', text: 'Tailored trousers for office wear' },
+                            { store: 'H&M', url: 'https://www2.hm.com/en_in/women/shop-by-product/suits-separates/skirts.html', text: 'Pencil skirts with detailed tops' }
+                        ],
+                        fancy: [
+                            { store: 'Amazon', url: 'https://www.amazon.in/s?k=apple+shape+pantsuits&rh=n%3A1968024031', text: 'Palazzo suits with long jackets' },
+                            { store: 'Myntra', url: 'https://www.myntra.com/formal-dresses?f=Body%20Shape%3AApple', text: 'Midi-length dresses with vertical seams' },
+                            { store: 'H&M', url: 'https://www2.hm.com/en_in/women/shop-by-product/suits-separates/suits.html', text: 'Wide-leg jumpsuits with defined waists' },
+                            { store: 'Amazon', url: 'https://www.amazon.in/s?k=apple+shape+blazer+dress&rh=n%3A1968024031', text: 'Blazer dresses with empire waists' },
+                            { store: 'Myntra', url: 'https://www.myntra.com/blazers?f=Body%20Shape%3AApple', text: 'Structured blazers for professional look' },
+                            { store: 'H&M', url: 'https://www2.hm.com/en_in/women/shop-by-product/dresses/shirt-dresses.html', text: 'Shirt dresses with belts' }
+                        ]
+                    }
+                },
+                rectangle: {
+                    traditional: {
+                        normal: [
+                            { store: 'Amazon', url: 'https://www.amazon.in/s?k=rectangle+shape+lehenga&rh=n%3A1968024031', text: 'Belted sarees with ruffles or pleats' },
+                            { store: 'Myntra', url: 'https://www.myntra.com/lehenga-choli?f=Body%20Shape%3ARectangle', text: 'Lehengas with layered panels' },
+                            { store: 'H&M', url: 'https://www2.hm.com/en_in/women/shop-by-product/dresses/maxi-dresses.html', text: 'Anarkalis with horizontal embroidery' },
+                            { store: 'Amazon', url: 'https://www.amazon.in/s?k=rectangle+shape+kurti&rh=n%3A1968024031', text: 'Kurtas with peplum details' },
+                            { store: 'Myntra', url: 'https://www.myntra.com/suits?f=Body%20Shape%3ARectangle', text: 'Sharara suits with detailed tops' },
+                            { store: 'H&M', url: 'https://www2.hm.com/en_in/women/shop-by-product/dresses/shirt-dresses.html', text: 'Shirt dresses with belts' }
+                        ],
+                        fancy: [
+                            { store: 'Amazon', url: 'https://www.amazon.in/s?k=rectangle+shape+designer+lehenga&rh=n%3A1968024031', text: 'Layered lehengas with cropped blouses' },
+                            { store: 'Myntra', url: 'https://www.myntra.com/designer-lehenga?f=Body%20Shape%3ARectangle', text: 'Sarees with heavy borders and embellished pallu' },
+                            { store: 'H&M', url: 'https://www2.hm.com/en_in/women/shop-by-product/dresses/evening-dresses.html', text: 'Gowns with peplum detailing' },
+                            { store: 'Amazon', url: 'https://www.amazon.in/s?k=rectangle+shape+bridal+lehenga&rh=n%3A1968024031', text: 'Bridal lehengas with detailed blouses' },
+                            { store: 'Myntra', url: 'https://www.myntra.com/designer-wear?f=Body%20Shape%3ARectangle', text: 'Designer gowns with waist definition' },
+                            { store: 'H&M', url: 'https://www2.hm.com/en_in/women/shop-by-product/dresses/maxi-dresses.html', text: 'Maxi dresses with belts' }
+                        ]
+                    },
+                    party: {
+                        normal: [
+                            { store: 'Amazon', url: 'https://www.amazon.in/s?k=rectangle+shape+party+dress&rh=n%3A1968024031', text: 'Ruffled or peplum tops with skinny pants' },
+                            { store: 'Myntra', url: 'https://www.myntra.com/party-wear-dresses?f=Body%20Shape%3ARectangle', text: 'Dresses with color blocking' },
+                            { store: 'H&M', url: 'https://www2.hm.com/en_in/women/shop-by-product/dresses/party-dresses.html', text: 'Jumpsuits with belted waists' },
+                            { store: 'Amazon', url: 'https://www.amazon.in/s?k=rectangle+shape+cocktail+dress&rh=n%3A1968024031', text: 'Cocktail dresses with waist definition' },
+                            { store: 'Myntra', url: 'https://www.myntra.com/dresses?f=Body%20Shape%3ARectangle', text: 'Dresses with peplum details' },
+                            { store: 'H&M', url: 'https://www2.hm.com/en_in/women/shop-by-product/dresses/mini-dresses.html', text: 'Mini dresses with belts' }
+                        ],
+                        fancy: [
+                            { store: 'Amazon', url: 'https://www.amazon.in/s?k=rectangle+shape+evening+gown&rh=n%3A1968024031', text: 'Asymmetrical dresses with belts' },
+                            { store: 'Myntra', url: 'https://www.myntra.com/designer-party-wear?f=Body%20Shape%3ARectangle', text: 'Two-piece sets with crop tops' },
+                            { store: 'H&M', url: 'https://www2.hm.com/en_in/women/shop-by-product/dresses/evening-dresses.html', text: 'Gowns with ruching at the waist' },
+                            { store: 'Amazon', url: 'https://www.amazon.in/s?k=rectangle+shape+sequin+dress&rh=n%3A1968024031', text: 'Sequin dresses with waist definition' },
+                            { store: 'Myntra', url: 'https://www.myntra.com/party-wear?f=Body%20Shape%3ARectangle', text: 'Designer gowns with waist detailing' },
+                            { store: 'H&M', url: 'https://www2.hm.com/en_in/women/shop-by-product/dresses/long-dresses.html', text: 'Long dresses with belts' }
+                        ]
+                    },
+                    casual: {
+                        normal: [
+                            { store: 'Amazon', url: 'https://www.amazon.in/s?k=rectangle+shape+casual+dresses&rh=n%3A1968024031', text: 'Layered tops with flared skirts' },
+                            { store: 'Myntra', url: 'https://www.myntra.com/casual-dresses?f=Body%20Shape%3ARectangle', text: 'Sweaters with belts over dresses' },
+                            { store: 'H&M', url: 'https://www2.hm.com/en_in/women/shop-by-product/dresses/summer-dresses.html', text: 'High-waisted jeans with tucked-in tops' },
+                            { store: 'Amazon', url: 'https://www.amazon.in/s?k=rectangle+shape+wrap+dress&rh=n%3A1968024031', text: 'Wrap dresses with belts' },
+                            { store: 'Myntra', url: 'https://www.myntra.com/tops?f=Body%20Shape%3ARectangle', text: 'Peplum tops for casual wear' },
+                            { store: 'H&M', url: 'https://www2.hm.com/en_in/women/shop-by-product/tops/t-shirts.html', text: 'T-shirts with interesting details' }
+                        ],
+                        fancy: [
+                            { store: 'Amazon', url: 'https://www.amazon.in/s?k=rectangle+shape+date+night+dresses&rh=n%3A1968024031', text: 'Jumpsuits with statement belts' },
+                            { store: 'Myntra', url: 'https://www.myntra.com/casual-dresses?f=Body%20Shape%3ARectangle&sort=popularity', text: 'Wrap-style midi dresses' },
+                            { store: 'H&M', url: 'https://www2.hm.com/en_in/women/shop-by-product/dresses/midi-dresses.html', text: 'Tiered skirts with fitted tops' },
+                            { store: 'Amazon', url: 'https://www.amazon.in/s?k=rectangle+shape+midi+dress&rh=n%3A1968024031', text: 'Midi dresses with waist definition' },
+                            { store: 'Myntra', url: 'https://www.myntra.com/jumpsuits?f=Body%20Shape%3ARectangle', text: 'Jumpsuits with waist detailing' },
+                            { store: 'H&M', url: 'https://www2.hm.com/en_in/women/shop-by-product/dresses/shirt-dresses.html', text: 'Shirt dresses with belts' }
+                        ]
+                    },
+                    work: {
+                        normal: [
+                            { store: 'Amazon', url: 'https://www.amazon.in/s?k=rectangle+shape+work+dresses&rh=n%3A1968024031', text: 'Shirt dresses with belts' },
+                            { store: 'Myntra', url: 'https://www.myntra.com/workwear-dresses?f=Body%20Shape%3ARectangle', text: 'Blazers with shoulder pads over peplum tops' },
+                            { store: 'H&M', url: 'https://www2.hm.com/en_in/women/shop-by-product/suits-separates/blazers.html', text: 'Pencil skirts with tucked-in blouses' },
+                            { store: 'Amazon', url: 'https://www.amazon.in/s?k=rectangle+shape+work+skirts&rh=n%3A1968024031', text: 'A-line skirts for professional look' },
+                            { store: 'Myntra', url: 'https://www.myntra.com/trousers?f=Body%20Shape%3ARectangle', text: 'Tailored trousers for office wear' },
+                            { store: 'H&M', url: 'https://www2.hm.com/en_in/women/shop-by-product/suits-separates/skirts.html', text: 'Pencil skirts with detailed tops' }
+                        ],
+                        fancy: [
+                            { store: 'Amazon', url: 'https://www.amazon.in/s?k=rectangle+shape+pantsuits&rh=n%3A1968024031', text: 'Tiered midi skirts with crop tops' },
+                            { store: 'Myntra', url: 'https://www.myntra.com/formal-dresses?f=Body%20Shape%3ARectangle', text: 'Pantsuits with cinched waists' },
+                            { store: 'H&M', url: 'https://www2.hm.com/en_in/women/shop-by-product/suits-separates/suits.html', text: 'Dresses with vertical stripes' },
+                            { store: 'Amazon', url: 'https://www.amazon.in/s?k=rectangle+shape+blazer+dress&rh=n%3A1968024031', text: 'Blazer dresses with waist definition' },
+                            { store: 'Myntra', url: 'https://www.myntra.com/blazers?f=Body%20Shape%3ARectangle', text: 'Structured blazers for professional look' },
+                            { store: 'H&M', url: 'https://www2.hm.com/en_in/women/shop-by-product/dresses/shirt-dresses.html', text: 'Shirt dresses with belts' }
+                        ]
+                    }
+                }
+            };
+
+            // In a real app, this would be an API call with pagination
+            // For this demo, we'll simulate pagination with a simple array slice
+            const baseLinks = allRecommendations[bodyType]?.[occasion]?.[style] || [];
+            const startIdx = (page - 1) * 3;
+            const endIdx = startIdx + 3;
+            
+            return baseLinks.slice(startIdx, endIdx);
+        }
+    </script>
+</body>
+</html>

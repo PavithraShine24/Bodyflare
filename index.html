@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StyleMatch | Fashion Guide</title>
+    <link rel="stylesheet" href="styles.css">
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCPQJnvxTkH6DtW2Dfok9J8g-CkNGQIMc8",
+            authDomain: "bodyflaree.firebaseapp.com",
+            projectId: "bodyflaree",
+            storageBucket: "bodyflaree.appspot.com",
+            messagingSenderId: "620829873565",
+            appId: "1:620829873565:web:569e7daf160be174730b74",
+            measurementId: "G-4PF6G95DBE"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+
+        document.addEventListener("DOMContentLoaded", () => {
+            const userEmailElement = document.getElementById("userEmail");
+            const logoutBtn = document.getElementById("logoutBtn");
+            const findYourStyleBtn = document.getElementById("findYourStyle");
+
+            // Redirect to style.html when "Find Your Style" is clicked
+            findYourStyleBtn.addEventListener("click", (e) => {
+                e.preventDefault(); // Prevent default form submission behavior
+                window.location.href = "style.html"; // Redirect to style.html
+            });
+
+            // Check authentication state for profile and logout
+            onAuthStateChanged(auth, (user) => {
+                if (user) {
+                    userEmailElement.innerText = user.email; // Display user email
+                } else {
+                    // Redirect to login page only for profile or logout actions
+                    if (window.location.pathname.includes("profile.html") || window.location.pathname.includes("logout")) {
+                        window.location.href = "login.html";
+                    }
+                }
+            });
+
+            // Logout functionality
+            logoutBtn.addEventListener("click", () => {
+                signOut(auth).then(() => {
+                    window.location.href = "login.html";
+                }).catch((error) => {
+                    console.error("Logout Error:", error);
+                });
+            });
+
+            // Slider logic
+            const slides = document.querySelectorAll(".trend-slide");
+            let currentSlide = 0;
+
+            function showNextSlide() {
+                slides.forEach(slide => slide.classList.remove("active"));
+                currentSlide = (currentSlide + 1) % slides.length;
+                slides[currentSlide].classList.add("active");
+            }
+
+            setInterval(showNextSlide, 3000); // Change slide every 3 seconds
+        });
+    </script>
+</head>
+<body>
+    <div class="background-animation"></div>
+
+    <nav class="navbar">
+        <div class="logo">StyleMatch</div>
+        <ul class="nav-links">
+            <li><a href="index.html">Home</a></li>
+            <li><a href="about.html">About</a></li>
+            <li><a href="blog.html">Blog</a></li>
+            <li><a href="contact.html">Contact</a></li>
+            <li class="user-dropdown">
+                <div class="user-icon">
+                    <img src="woman.png" alt="User" class="icon">
+                </div>
+                <span id="userEmail">Loading...</span>
+                <ul class="dropdown-content">
+                   
+                    <li><a href="#" id="logoutBtn">Logout</a></li>
+                </ul>
+            </li>
+        </ul>
+    </nav>
+
+    <!-- Fashion Trends Slider -->
+    <div class="fashion-slider">
+        <div class="trend-container">
+            <div class="trend-slide">Minimalist Styles for a Chic Look ✨</div>
+            <div class="trend-slide">Elevate Your Wardrobe with Bold Colors 🎨</div>
+            <div class="trend-slide">Find the Perfect Outfit for Your Body Type 👗</div>
+            <div class="trend-slide">Classic Fashion That Never Goes Out of Style 🕶️</div>
+            <div class="trend-slide">Unlock Your Signature Style 🔥</div>
+        </div>
+    </div>
+
+    <div class="content">
+        <h1>Discover Your Perfect Style</h1>
+        <p class="description">Get personalized fashion recommendations based on your body type.</p>
+        <a href="style.html" id="findYourStyle" class="explore-btn">Find Your Style</a>
+
+        <div class="guide-model">
+            <img src="model.png" alt="Guide Model" class="guide-image">
+            <img src="model2.png" alt="Fashion Style 1" class="guide-image">
+            <img src="model3.png" alt="Fashion Style 2" class="guide-image">
+        </div>
+    </div>
+
+    <div class="left">
+        <img src="imagetest.png" alt="Fashion 1" class="imagetest">
+        <img src="image2test.png" alt="Fashion 2" class="imagetest2">
+    </div>
+
+    <script src="script.js"></script>
+
+    <style>
+        /* Navbar Styling */
+        .navbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #222;
+            padding: 15px 40px;
+        }
+
+        .nav-links {
+            list-style: none;
+            display: flex;
+            gap: 25px;
+        }
+
+        .nav-links li a {
+            text-decoration: none;
+            font-size: 18px;
+            font-weight: bold;
+            color: white;
+            transition: 0.3s;
+        }
+
+        .nav-links li a:hover {
+            color: #ffcc00;
+            transform: scale(1.1);
+        }
+
+        /* Fashion Trends Slider */
+        .fashion-slider {
+            position: fixed;
+            bottom: 10px;
+            left: 0;
+            width: 100%;
+            height: 50px;
+            background: linear-gradient(45deg, rgba(255, 0, 150, 0.9), rgba(255, 165, 0, 0.9));
+            display: flex;
+            align-items: center;
+            overflow: hidden;
+            white-space: nowrap;
+            box-shadow: 0px -3px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .trend-container {
+            display: flex;
+            gap: 50px;
+            animation: scroll 15s linear infinite;
+        }
+
+        .trend-slide {
+            font-size: 18px;
+            font-weight: bold;
+            color: white;
+            text-transform: uppercase;
+            padding: 0 30px;
+        }
+
+        @keyframes scroll {
+            from {
+                transform: translateX(100%);
+            }
+            to {
+                transform: translateX(-100%);
+            }
+        }
+    </style>
+</body>
+</html>

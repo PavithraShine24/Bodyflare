@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign Up | StyleMatch</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        body {
+            height: 100vh;
+            display: flex;
+            background: linear-gradient(45deg, #1a1a2e, #ff9a9e, #fad0c4, #fbc2eb);
+            background-size: 300% 300%;
+            animation: gradientBG 15s ease infinite;
+        }
+
+        @keyframes gradientBG {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .split-layout {
+            display: flex;
+            width: 100%;
+            height: 100%;
+        }
+
+        .form-side {
+            width: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 2rem;
+        }
+
+        .logo-side {
+            width: 50%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .logo-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 2rem;
+            z-index: 2;
+        }
+
+        .logo-text {
+            color: white;
+            font-size: 7rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .logo-slogan {
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 2rem;
+            font-weight: 300;
+            max-width: 100%;
+            line-height: 1.5;
+        }
+
+        .floating-elements {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            z-index: 1;
+        }
+
+        .floating-element {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 50%;
+            animation: float 15s infinite linear;
+        }
+
+        @keyframes float {
+            0% { transform: translateY(0) rotate(0deg); }
+            100% { transform: translateY(-1000px) rotate(720deg); }
+        }
+
+        .container {
+            background-color: rgba(255, 255, 255, 0.9);
+            border-radius: 15px;
+            box-shadow: 0 0 30px rgba(0, 0, 0, 0.2);
+            width: 100%;
+            max-width: 450px;
+            padding: 2.5rem;
+            animation: popUp 0.8s ease-out;
+        }
+
+        .form-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .form-header h1 {
+            color: #1a1a2e;
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .form-header p {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+            position: relative;
+        }
+
+        .input-with-icon {
+            position: relative;
+        }
+
+        .input-with-icon i {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #888;
+        }
+
+        input {
+            width: 100%;
+            padding: 15px 15px 15px 45px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            transition: all 0.3s;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #ff9a9e;
+            box-shadow: 0 0 0 3px rgba(255, 154, 158, 0.2);
+        }
+
+        .password-toggle {
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            cursor: pointer;
+            color: #888;
+            z-index: 2;
+        }
+
+        .btn-primary {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(to right, #ff4b2b, #ff416c);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 1rem;
+        }
+
+        .btn-primary:hover {
+            background: linear-gradient(to right, #ff416c, #ff4b2b);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255, 75, 43, 0.3);
+        }
+
+        .login-link {
+            text-align: center;
+            color: #666;
+            font-size: 0.9rem;
+            margin-top: 1.5rem;
+        }
+
+        .login-link a {
+            color: #ff4b2b;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .login-link a:hover {
+            text-decoration: underline;
+        }
+
+        @keyframes popUp {
+            from { transform: scale(0.95); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+
+        /* Loading spinner */
+        .spinner {
+            display: none;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="split-layout">
+        <!-- Left side - Signup Form -->
+        <div class="form-side">
+            <div class="container">
+                <div class="form-header">
+                    <h1>Create Your Account</h1>
+                    <p>Join StyleMatch to discover your perfect fashion matches</p>
+                </div>
+
+                <form id="signupForm">
+                    <div class="form-group">
+                        <label for="email" class="sr-only">Email</label>
+                        <div class="input-with-icon">
+                            <i class="fas fa-envelope"></i>
+                            <input type="email" id="email" placeholder="Email Address" required>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="password" class="sr-only">Password</label>
+                        <div class="input-with-icon">
+                            <i class="fas fa-lock"></i>
+                            <input type="password" id="password" placeholder="Password (min 6 characters)" required minlength="6">
+                            <i class="fas fa-eye password-toggle"></i>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn-primary" id="submitBtn">
+                        <span id="buttonText">Sign Up</span>
+                        <div class="spinner" id="spinner"></div>
+                    </button>
+
+                    <p class="login-link">Already have an account? <a href="login.html">Log in</a></p>
+                </form>
+                <div id="errorMessage" style="color: #ff4b2b; text-align: center; margin-top: 1rem;"></div>
+            </div>
+        </div>
+
+        <!-- Right side - Logo -->
+        <div class="logo-side">
+            <!-- Floating background elements -->
+            <div class="floating-elements">
+                <div class="floating-element" style="width: 100px; height: 100px; top: 20%; left: 10%;"></div>
+                <div class="floating-element" style="width: 150px; height: 150px; top: 60%; left: 70%;"></div>
+                <div class="floating-element" style="width: 80px; height: 80px; top: 30%; left: 80%;"></div>
+                <div class="floating-element" style="width: 120px; height: 120px; top: 70%; left: 20%;"></div>
+            </div>
+            
+            <!-- Logo content -->
+            <div class="logo-container">
+                <h1 class="logo-text">StyleMatch</h1>
+                <p class="logo-slogan">FIND YOUR FIT, FLAUNT YOUR STYLE</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
+        // Your Firebase Config
+        const firebaseConfig = {
+            apiKey: "AIzaSyCPQJnvxTkH6DtW2Dfok9J8g-CkNGQIMc8",
+            authDomain: "bodyflaree.firebaseapp.com",
+            projectId: "bodyflaree",
+            storageBucket: "bodyflaree.appspot.com",
+            messagingSenderId: "620829873565",
+            appId: "1:620829873565:web:569e7daf160be174730b74",
+            measurementId: "G-4PF6G95DBE"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+
+        // DOM Elements
+        const signupForm = document.getElementById('signupForm');
+        const emailInput = document.getElementById('email');
+        const passwordInput = document.getElementById('password');
+        const submitBtn = document.getElementById('submitBtn');
+        const buttonText = document.getElementById('buttonText');
+        const spinner = document.getElementById('spinner');
+        const errorMessage = document.getElementById('errorMessage');
+        const passwordToggle = document.querySelector('.password-toggle');
+
+        // Toggle password visibility
+        passwordToggle.addEventListener('click', function() {
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                this.classList.replace('fa-eye', 'fa-eye-slash');
+            } else {
+                passwordInput.type = 'password';
+                this.classList.replace('fa-eye-slash', 'fa-eye');
+            }
+        });
+
+        // Form submission
+        signupForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const email = emailInput.value;
+            const password = passwordInput.value;
+
+            // Show loading state
+            buttonText.textContent = 'Creating Account...';
+            spinner.style.display = 'block';
+            submitBtn.disabled = true;
+            errorMessage.textContent = '';
+
+            try {
+                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                console.log("User created:", userCredential.user);
+                
+                // Redirect after successful signup
+                window.location.href = "login.html";
+            } catch (error) {
+                console.error("Signup error:", error);
+                
+                // User-friendly error messages
+                const errorMessages = {
+                    'auth/email-already-in-use': 'This email is already registered',
+                    'auth/invalid-email': 'Please enter a valid email address',
+                    'auth/weak-password': 'Password must be at least 6 characters',
+                    'auth/network-request-failed': 'Network error. Please check your connection'
+                };
+                
+                errorMessage.textContent = errorMessages[error.code] || 'Signup failed. Please try again.';
+            } finally {
+                // Reset button state
+                buttonText.textContent = 'Sign Up';
+                spinner.style.display = 'none';
+                submitBtn.disabled = false;
+            }
+        });
+
+        // Create more floating elements dynamically
+        document.addEventListener('DOMContentLoaded', function() {
+            const floatingContainer = document.querySelector('.floating-elements');
+            for (let i = 0; i < 8; i++) {
+                const element = document.createElement('div');
+                element.classList.add('floating-element');
+                const size = Math.random() * 100 + 50;
+                element.style.width = `${size}px`;
+                element.style.height = `${size}px`;
+                element.style.top = `${Math.random() * 100}%`;
+                element.style.left = `${Math.random() * 100}%`;
+                element.style.animationDuration = `${Math.random() * 20 + 10}s`;
+                element.style.animationDelay = `${Math.random() * 5}s`;
+                element.style.opacity = Math.random() * 0.4 + 0.1;
+                floatingContainer.appendChild(element);
+            }
+        });
+    </script>
+</body>
+</html>
