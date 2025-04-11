@@ -1,0 +1,12 @@
+{
+  "projects": {
+    "default": "bodyflaree"
+  },
+  "targets": {
+    "bodyflaree": {
+      "hosting": {
+        "default": ["bodyflaree"]  // Matches your Site ID
+      }
+    }
+  }
+}
